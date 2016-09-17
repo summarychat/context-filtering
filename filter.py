@@ -6,6 +6,8 @@ from oauth2client.client import GoogleCredentials
 import re
 import sys
 
+ignored_regexes = ['^l+(o+l+)+$', '^lmao', '^rofl', '^a*(h+a+)*h*$']
+
 def getService():
     credentials = GoogleCredentials.get_application_default().create_scoped(
         ['https://www.googleapis.com/auth/cloud-platform'])
@@ -63,6 +65,7 @@ def analyzeAll(content, encodingType = 'UTF32'):
 	}
 	return getService().documents().annotateText(body=body).execute()
 
+
 def scoreEntities(response):
 	return len(response['entities'])
 
@@ -71,57 +74,73 @@ def scoreSentiment(response):
 	magnitude = response['documentSentiment']['magnitude']
 	return polarity * magnitude 
 
-def scoreComplexity(response):
-	numSentences = len(response['sentences'])
+def significantToken(token):
+	# ignore determiners (the, a, an, etc.) and punctuation
+	if token['partOfSpeech']['tag'] in ['DET', 'PUNCT']:
+		return False
 
-	numSignificantTokens = 0
+	# ignore blabber (e.g. lololol)
+	else:
+		for regex in ignored_regexes:
+			if re.search(regex, token['text']['content'].lower()) != None:
+				return False
+	return True
+
+def scoreComplexity(response):
+	num_sentences = len(response['sentences'])
+
+	num_significant_tokens = 0
 
 	for token in response['tokens']:
-		significant = True
+		if significantToken(token):
+			num_significant_tokens += 1
 
-		# ignore determiners and punctuation
-		if token['partOfSpeech']['tag'] in ['DET', 'PUNCT']:
-			significant = False
-
-		# ignore tokens that are just blabber (i.e. lololol)
-		else:
-			for regex in open("ignoredRegexes.txt").readlines():
-				if re.search(regex, token['text']['content']):
-					significant = False
-					break
-
-		if significant:
-			numSignificantTokens += 1
-
-	return numSentences * numSignificantTokens
+	return num_sentences * num_significant_tokens
 
 def scoreQuestion(response):
-	numQuestions = 0
+	num_questions = 0
+	seen_significant_token = False; # so chained ??? aren't counted as 3 questions
 
 	for token in response['tokens']:
-		if token['text']['content'] == '?':
-			numQuestions += 1
-	return numQuestions
+		if seen_significant_token and token['text']['content'] == '?':
+			seen_significant_token = False
+			num_questions += 1
+		elif not seen_significant_token:
+			seen_significant_token = significantToken(token)
 
-def evaluate(response):
+	return num_questions
+
+# look at the distance of the message from the last question
+# return a rough probability that this is meant to be an answer
+def scoreAnswer(response):
+	dist = 1
+
+	return 1/dist
+
+def evaluateImportance(response):
 	entities_score = scoreEntities(response)
 	sentiment_score = scoreSentiment(response)
 	complexity_score = scoreComplexity(response)
 	question_score = scoreQuestion(response)
+	answer_score = scoreAnswer(response)
 
 	entities_weight = 30;
 	sentiment_weight = 20;
 	complexity_weight = 5;
 	question_weight = 30;
+	answer_weight = 40;
+
+	threshhold = 50;
 	
 	#print "response: ", response
 	print "entities score: ", entities_score
 	print "sentiment score: ", sentiment_score
 	print "complexity score: ", complexity_score
 	print "question score: ", question_score
+	print "answer score: ", answer_score
 
-	important = entities_weight * entities_score + sentiment_weight * abs(sentiment_score) + complexity_weight * complexity_score + question_weight * question_score
-	print "important: ", important > 50
+	important = entities_weight * entities_score + sentiment_weight * abs(sentiment_score) + complexity_weight * complexity_score + question_weight * question_score + answer_weight * answer_score
+	print "important: ", important, 'Yes' if important > threshhold else 'No'
 
 
 if __name__ == '__main__':
@@ -131,7 +150,8 @@ if __name__ == '__main__':
 	for line in open(sys.argv[1]).readlines():
 		response = analyzeAll(line)
 		print line
-		evaluate(response)
+		evaluateImportance(response)
+		print
 
 	
 
