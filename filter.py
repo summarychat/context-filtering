@@ -103,23 +103,35 @@ def scoreQuestion(response):
 			numQuestions += 1
 	return numQuestions
 
-def isImportant(response):
+def evaluate(response):
 	entities_score = scoreEntities(response)
 	sentiment_score = scoreSentiment(response)
 	complexity_score = scoreComplexity(response)
 	question_score = scoreQuestion(response)
+
+	entities_weight = 30;
+	sentiment_weight = 20;
+	complexity_weight = 5;
+	question_weight = 30;
 	
-	print "response: ", response
+	#print "response: ", response
 	print "entities score: ", entities_score
 	print "sentiment score: ", sentiment_score
 	print "complexity score: ", complexity_score
 	print "question score: ", question_score
 
+	important = entities_weight * entities_score + sentiment_weight * abs(sentiment_score) + complexity_weight * complexity_score + question_weight * question_score
+	print "important: ", important > 50
+
+
 if __name__ == '__main__':
 	#response = analyzeAll("hello Statue of Liberty :)")
-	response = analyzeAll(sys.argv[1])
+	#response = analyzeAll(sys.argv[1])
 
-	isImportant(response)
+	for line in open(sys.argv[1]).readlines():
+		response = analyzeAll(line)
+		print line
+		evaluate(response)
 
 	
 
