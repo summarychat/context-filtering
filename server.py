@@ -18,7 +18,7 @@ class myHandler(BaseHTTPRequestHandler):
             ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
             if ctype == 'application/json':
                 length = int(self.headers.getheader('content-length'))
-                data = json.parse(self.rfile.read(length))
+                data = json.loads(self.rfile.read(length))
                 chat_room = self.path.split('/')[-1]
                 filter.add_context(chat_room, data)
                 print "record from %s is recieved" % chat_room
