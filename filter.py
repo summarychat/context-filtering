@@ -1,9 +1,6 @@
 from googleapiclient import discovery
 from oauth2client.client import GoogleCredentials
 
-from yelp.client import Client
-from yelp.oauth1_authenticator import Oauth1Authenticator
-
 import db
 
 import argparse
