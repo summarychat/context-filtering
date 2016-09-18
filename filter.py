@@ -135,9 +135,9 @@ def add_context(chat_room, data):
 
 		if importance > threshold:
 			session.add(db.Event(channel=chat_room, name=data['user'], message=data['msg'], links=scrape(response['entities']), timestamp=latest_entries[0].timestamp))
-			session.commit()
-			print "Finished: ", session.query(db.Event).order_by("timestamp desc").limit(4).all()
+			
 	db.run_transaction(db.sessionmaker, callback)
+	print "Finished: ", db.session().query(db.Event).order_by("timestamp desc").limit(4).all()
 
 if __name__ == '__main__':
 	for line in open(sys.argv[1]).readlines():
