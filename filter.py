@@ -133,7 +133,7 @@ def add_context(chat_room, data):
 	print "important: ", important, 'Yes' if important > threshold else 'No'
 
 	if importance > threshold:
-		db.session().add(db.Event(channel=chat_room, name=data.user, message=data.msg, links=scrape(response['entities']), timestamp=latest_entries[0].timestamp))
+		db.session().add(db.Event(channel=chat_room, name=data['user'], message=data['msg'], links=scrape(response['entities']), timestamp=latest_entries[0].timestamp))
 
 if __name__ == '__main__':
 	for line in open(sys.argv[1]).readlines():
