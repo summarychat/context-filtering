@@ -6,9 +6,9 @@ PORT_NUMBER = 80
 #This class will handles any incoming request from
 #the browser 
 class myHandler(BaseHTTPRequestHandler):
-	
-	#Handler for the GET requests
-	def do_POST(self):
+    
+    #Handler for the GET requests
+    def do_POST(self):
         if None != re.search('/*', self.path):
             ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
             if ctype == 'application/json':
@@ -30,17 +30,17 @@ class myHandler(BaseHTTPRequestHandler):
 
 
 try:
-	#Create a web server and define the handler to manage the
-	#incoming request
+    #Create a web server and define the handler to manage the
+    #incoming request
     # PUT INIT CODE HERE
 
     ###################
-	server = HTTPServer(('', PORT_NUMBER), myHandler)
-	print 'Started httpserver on port ' , PORT_NUMBER
-	
-	#Wait forever for incoming htto requests
-	server.serve_forever()
+    server = HTTPServer(('', PORT_NUMBER), myHandler)
+    print 'Started httpserver on port ' , PORT_NUMBER
+    
+    #Wait forever for incoming htto requests
+    server.serve_forever()
 
 except KeyboardInterrupt:
-	print '^C received, shutting down the web server'
-	server.socket.close()
+    print '^C received, shutting down the web server'
+    server.socket.close()
