@@ -84,7 +84,6 @@ def score_question(response):
 # look at the distance of the message from the last question
 # return a rough probability that this is meant to be an answer
 def score_answer(latest_entries):
-    latest_entries = db.session().query(db.Message).order_by("timestamp desc").limit(4).all()
     for idx in range(1, len(latest_entries)):
         if score_question(analyze_all(latest_entries[idx].message)):
             return 1/idx
