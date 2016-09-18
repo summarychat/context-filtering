@@ -130,6 +130,7 @@ def add_context(chat_room, data):
 	print "complexity score: ", scores[2]
 	print "question score: ", scores[3]
 	print "answer score: ", scores[4]
+	print "time score: ", scores[5]
 	print "importance: ", importance, 'Yes' if importance > threshold else 'No'
 
 	if importance > threshold:
