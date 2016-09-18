@@ -99,9 +99,9 @@ def score_elapsed_time(response):
 	if(len(previous_entries) < 2):
 		return 0
 
-	elapsedTime = (previous_entries[0].timestamp - previous_entries[1].timestamp).total_seconds() / 60
+	elapsed_minutes = (previous_entries[0].timestamp - previous_entries[1].timestamp).total_seconds() / 60
 
-	return max(2 ** (elapsedMinutes / 50), 5) - 1
+	return max(2 ** (elapsed_minutes / 50), 5) - 1
 
 def evaluate_importance(response):
 	weights = [30, 10, 5, 35, 30, 5] # entities, sentiment, complexity, question, answer, time
