@@ -118,7 +118,7 @@ def add_context(chat_room, data):
 		latest_entries = session.query(db.Message).order_by("timestamp desc").limit(4).all()
 		response = analyze_all(data['msg'])
 
-		weights = [30, 5, 7, 30, 20, 5] # entities, sentiment, complexity, question, answer, time
+		weights = [30, 5, 7, 20, 20, 5] # entities, sentiment, complexity, question, answer, time
 		scores = [score_entities(response), score_sentiment(response), score_complexity(response), score_question(response), score_answer(latest_entries), score_elapsed_time(latest_entries)]
 
 		threshold = 50;
