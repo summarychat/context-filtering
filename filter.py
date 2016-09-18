@@ -84,20 +84,19 @@ def score_question(response):
 # look at the distance of the message from the last question
 # return a rough probability that this is meant to be an answer
 def score_answer(response):
-	previous_entries = db.session().query(db.Message).order_by("timestamp desc").limit(3).all()
-	distance = 1
-
-	for entry in reversed(previous_entries):
-		if score_question(analyze_all(entry.message)):
-			return 1/distance
-		distance += 1
-
-	return 0
+        previous_entries = db.session().query(db.Message).order_by("timestamp desc").limit(4).all()
+        previous_entries.pop(0)
+        distance = 1
+        for entry in previous_entries:
+                if score_question(analyze_all(entry.message)):
+                        return 1/distance
+                distance += 1
+        return 0
 
 def score_elapsed_time(responseTime):
-	previous_entry = db.session().query(db.Message).order_by("timestamp desc").limit(1).all()
+	previous_entries = db.session().query(db.Message).order_by("timestamp desc").limit(2).all()
 
-	elapsedTime = (responseTime - previousEntry.timestamp).total_seconds() / 60
+	elapsedTime = (responseTime - previousEntries[1].timestamp).total_seconds() / 60
 
 	return max(2 ** (elapsedMinutes / 50), 5) - 1
 
