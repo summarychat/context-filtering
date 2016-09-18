@@ -1,5 +1,7 @@
 #!/usr/bin/python
 from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
+
+import cgi
 import re
 
 PORT_NUMBER = 80
