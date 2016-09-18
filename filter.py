@@ -93,13 +93,13 @@ def score_answer(response):
                 distance += 1
         return 0
 
-def score_elapsed_time(responseTime):
+def score_elapsed_time(response):
 	previous_entries = db.session().query(db.Message).order_by("timestamp desc").limit(2).all()
 
 	if(len(previous_entries) < 2):
 		return 0
 
-	elapsedTime = (responseTime - previous_entries[1].timestamp).total_seconds() / 60
+	elapsedTime = (previous_entries[0].timestamp - previous_entries[1].timestamp).total_seconds() / 60
 
 	return max(2 ** (elapsedMinutes / 50), 5) - 1
 
@@ -117,9 +117,11 @@ def evaluate_importance(response):
 	print "answer score: ", scores[4]
 
 	important = sum([a * b for a, b in zip(weights, scores)])
-	print "important: ", important, 'Yes' if important > threshold else 'No'
-	return important > threshold
 
+	print "important: ", important, 'Yes' if important > threshold else 'No'
+
+	if important > threshold:
+		db.session()
 
 def add_context(chat_room, data):
 	return 0
