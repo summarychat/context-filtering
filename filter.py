@@ -1,56 +1,26 @@
-import argparse
 from googleapiclient import discovery
+from oauth2client.client import GoogleCredentials
+
+from yelp.client import Client
+from yelp.oauth1_authenticator import Oauth1Authenticator
+
+import argparse
 import httplib2
 import json
-from oauth2client.client import GoogleCredentials
+import math
 import re
 import sys
 
-ignored_regexes = ['^l+(o+l+)+$', '^lmao', '^rofl', '^a*(h+a+)*h*$']
+ignored_regexes = ['^l+(o+l+)+$', '^lmao', '^rofl', '^a*(h+a+)*h*$', '^[^a-z0-9]*$']
 
-def getService():
+def get_nlp_service():
     credentials = GoogleCredentials.get_application_default().create_scoped(
         ['https://www.googleapis.com/auth/cloud-platform'])
     http = httplib2.Http()
     credentials.authorize(http)
     return discovery.build('language', 'v1beta1', http=http)
 
-def analyzeEntities(content, encodingType = 'UTF32'):
-	body = {
-		'document' : {
-			'type' : 'PLAIN_TEXT',
-			'content' : content,
-		},
-		'encodingType' : encodingType,
-	}
-	return getService().documents().analyzeEntities(body=body).execute()
-
-def analyzeSentiment(content, encodingType = 'UTF32'):
-	body = {
-		'document' : {
-			'type' : 'PLAIN_TEXT',
-			'content' : content,
-		},
-		'encodingType' : encodingType,
-	}
-	return getService().documents().analyzeSentiment(body=body).execute()
-
-def analyzeSyntax(content, encodingType = 'UTF32'):
-	body = {
-		'document' : {
-			'type' : 'PLAIN_TEXT',
-			'content' : content,
-		},
-		'features' : {
-			'extract_syntax' : True,
-			'extract_document_sentiment' : False,
-			'extract_entities' : False,
-		},
-		'encodingType' : encodingType,
-	}
-	return getService().documents().annotateText(body=body).execute()
-
-def analyzeAll(content, encodingType = 'UTF32'):
+def analyze_all(content, encodingType = 'UTF32'):
 	body = {
 		'document' : {
 			'type' : 'PLAIN_TEXT',
@@ -63,41 +33,43 @@ def analyzeAll(content, encodingType = 'UTF32'):
 		},
 		'encodingType' : encodingType,
 	}
-	return getService().documents().annotateText(body=body).execute()
+	return get_nlp_service().documents().annotateText(body=body).execute()
 
-
-def scoreEntities(response):
+def score_entities(response):
 	return len(response['entities'])
 
-def scoreSentiment(response):
+def score_sentiment(response):
 	polarity = response['documentSentiment']['polarity']
 	magnitude = response['documentSentiment']['magnitude']
-	return polarity * magnitude 
+	return abs(polarity * magnitude)
 
-def significantToken(token):
+def score_token(token):
 	# ignore determiners (the, a, an, etc.) and punctuation
 	if token['partOfSpeech']['tag'] in ['DET', 'PUNCT']:
-		return False
+		return 0
 
 	# ignore blabber (e.g. lololol)
-	else:
-		for regex in ignored_regexes:
-			if re.search(regex, token['text']['content'].lower()) != None:
-				return False
-	return True
+	for regex in ignored_regexes:
+		if re.search(regex, token['text']['content'].lower()) != None:
+			return 0
 
-def scoreComplexity(response):
+	if token['partOfSpeech']['tag'] == 'NUM':
+		return 4
+
+	return 1
+
+def score_complexity(response):
 	num_sentences = len(response['sentences'])
 
-	num_significant_tokens = 0
+	total_score = 0
 
 	for token in response['tokens']:
-		if significantToken(token):
-			num_significant_tokens += 1
+		total_score += score_token(token)
 
-	return num_sentences * num_significant_tokens
+	return num_sentences * total_score
 
-def scoreQuestion(response):
+# does it contain a question?
+def score_question(response):
 	num_questions = 0
 	seen_significant_token = False; # so chained ??? aren't counted as 3 questions
 
@@ -106,41 +78,44 @@ def scoreQuestion(response):
 			seen_significant_token = False
 			num_questions += 1
 		elif not seen_significant_token:
-			seen_significant_token = significantToken(token)
+			seen_significant_token = score_token(token) != 0
 
 	return num_questions
 
 # look at the distance of the message from the last question
 # return a rough probability that this is meant to be an answer
-def scoreAnswer(response):
-	dist = 1
+def score_answer(response):
+	for dist in range (1, 6):
+		return 1/dist
 
-	return 1/dist
+	return 0
 
-def evaluateImportance(response):
-	entities_score = scoreEntities(response)
-	sentiment_score = scoreSentiment(response)
-	complexity_score = scoreComplexity(response)
-	question_score = scoreQuestion(response)
-	answer_score = scoreAnswer(response)
+def score_elapsed_time(response):
+	elapsedMinutes = 1
 
-	entities_weight = 30;
-	sentiment_weight = 20;
-	complexity_weight = 5;
-	question_weight = 30;
-	answer_weight = 40;
+	return max(2 ** (elapsedMinutes / 50), 5)
 
-	threshhold = 50;
+def evaluate_importance(response):
+	weights = [30, 10, 5, 35, 30, 5] # entities, sentiment, complexity, question, answer, time
+	scores = [score_entities(response), score_sentiment(response), score_complexity(response), score_question(response), score_answer(response), score_elapsed_time(response)]
+
+	threshold = 50;
 	
-	#print "response: ", response
-	print "entities score: ", entities_score
-	print "sentiment score: ", sentiment_score
-	print "complexity score: ", complexity_score
-	print "question score: ", question_score
-	print "answer score: ", answer_score
+	print "response: ", response
+	print "entities score: ", scores[0]
+	print "sentiment score: ", scores[1]
+	print "complexity score: ", scores[2]
+	print "question score: ", scores[3]
+	print "answer score: ", scores[4]
 
-	important = entities_weight * entities_score + sentiment_weight * abs(sentiment_score) + complexity_weight * complexity_score + question_weight * question_score + answer_weight * answer_score
-	print "important: ", important, 'Yes' if important > threshhold else 'No'
+
+	important = sum([a * b for a, b in zip(weights, scores)])
+	print "important: ", important, 'Yes' if important > threshold else 'No'
+	return important > threshold
+
+
+def add_context(chat_room, data):
+	return 0
 
 
 if __name__ == '__main__':
@@ -148,9 +123,9 @@ if __name__ == '__main__':
 	#response = analyzeAll(sys.argv[1])
 
 	for line in open(sys.argv[1]).readlines():
-		response = analyzeAll(line)
+		response = analyze_all(line)
 		print line
-		evaluateImportance(response)
+		evaluate_importance(response)
 		print
 
 	

@@ -15,7 +15,7 @@ class myHandler(BaseHTTPRequestHandler):
                 length = int(self.headers.getheader('content-length'))
                 data = cgi.parse_qs(self.rfile.read(length), keep_blank_values=1)
                 chat_room = self.path.split('/')[-1]
-                find_context(chat_room, data)
+                add_context(chat_room, data)
                 print "record from %s is recieved" % chat_room
             else:
                 data = {}
