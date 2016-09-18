@@ -99,15 +99,20 @@ def score_elapsed_time(latest_entries):
 
 	return max(2 ** (elapsed_minutes / 50), 5) - 1
 
-def scrape(entity):
-    str_res = ""
-    dic = entity[0]
-    loc_name = dic["mentions"][0]["text"]["content"]
-    url = dic["metadata"]["wikipedia_url"]
-    loc_name = loc_name.encode('ascii','ignore')
-    url = url.encode('ascii','ignore')
-    str_res = '<a href="'+url+'">'+loc_name+'</a>'
-    return str_res
+def scrape(entities):
+    str_res = []
+    for i in entities:
+        try:
+            loc_name = i["name"]
+            url = i["metadata"]["wikipedia_url"]
+        except KeyError:
+            continue
+        loc_name = loc_name.encode('ascii','ignore')
+        url = url.encode('ascii','ignore')
+        s = '<a href="'+url+'">'+loc_name+'</a>'
+        str_res.append(s)
+    final = ','.join(str_res)
+    return final
 
 def add_context(chat_room, data):
 	latest_entries = db.session().query(db.Message).order_by("timestamp desc").limit(4).all()
@@ -127,7 +132,7 @@ def add_context(chat_room, data):
 	print "important: ", important, 'Yes' if important > threshold else 'No'
 
 	if importance > threshold:
-		db.session().add(db.Event(channel=chat_room, name=data.user, message=data.msg, links='', timestamp=latest_entries[0].timestamp))
+		db.session().add(db.Event(channel=chat_room, name=data.user, message=data.msg, links=scrape(response['entities']), timestamp=latest_entries[0].timestamp))
 
 if __name__ == '__main__':
 	for line in open(sys.argv[1]).readlines():
