@@ -104,10 +104,13 @@ def score_elapsed_time(response):
 	return max(2 ** (elapsed_minutes / 50), 5) - 1
 
 def evaluate_importance(response):
-	weights = [30, 10, 5, 35, 30, 5] # entities, sentiment, complexity, question, answer, time
+	latest_entries = db.session().query(db.Message).order_by("timestamp desc").limit(2).all()
+
+	weights = [30, 10, 5, 30, 30, 5] # entities, sentiment, complexity, question, answer, time
 	scores = [score_entities(response), score_sentiment(response), score_complexity(response), score_question(response), score_answer(response), score_elapsed_time(response)]
 
 	threshold = 50;
+	importance = sum([a * b for a, b in zip(weights, scores)])
 	
 	#print "response: ", response
 	print "entities score: ", scores[0]
@@ -115,21 +118,17 @@ def evaluate_importance(response):
 	print "complexity score: ", scores[2]
 	print "question score: ", scores[3]
 	print "answer score: ", scores[4]
-
-	important = sum([a * b for a, b in zip(weights, scores)])
-
 	print "important: ", important, 'Yes' if important > threshold else 'No'
 
-	if important > threshold:
-		db.session()
+	return importance > threshold
+
 
 def add_context(chat_room, data):
-	return 0
+	if evaluate_importance(analyze_all(data.msg)):
+		db.session().add(db.Event(channel=chat_room, event_type='', msg_id=''))
 
 
 if __name__ == '__main__':
-	#response = analyzeAll("hello Statue of Liberty :)")
-	#response = analyzeAll(sys.argv[1])
 
 	for line in open(sys.argv[1]).readlines():
 		response = analyze_all(line)

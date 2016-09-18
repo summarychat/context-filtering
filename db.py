@@ -24,10 +24,10 @@ def session():
 class Message(db.Model):
     __tablename__ = 'messages'
     id = db.Column('msg_id', db.Integer, primary_key=True)
-    channel = db.Column("channel",db.String)
-    name = db.Column("name",db.String)
-    message = db.Column("message",db.String)
-    timestamp = db.Column("timestamp",db.DateTime)
+    channel = db.Column("channel", db.String)
+    name = db.Column("name", db.String)
+    message = db.Column("message", db.String)
+    timestamp = db.Column("timestamp", db.DateTime)
 
     def __init__(self, channel, name, message, scores, timestamp):
         self.channel = channel
@@ -38,11 +38,15 @@ class Message(db.Model):
 class Event(db.Model):
     __tablename__ = 'events'
     id = db.Column('event_id', db.Integer, primary_key=True)
-    channel = db.Column("channel",db.String)
-    event_type = db.Column("event_type",db.String)
-    msg_id = db.Column('msg_id', db.Integer, db.ForeignKey('messages.msg_id'))
+    channel = db.Column("channel", db.String)
+    name = db.Column("name", db.String)
+    message = db.Column("message", db.String)
+    links = db.Column("links", db.String)
+    timestamp = db.Column("timestamp", db.DateTime)
 
-    def __init__(self, channel, event_type, msg_id):
+    def __init__(self, channel, name, message, links, timestamp):
         self.channel = channel
-        self.event_type = event_type
-        self.msg_id = msg_id
+        self.name = name
+        self.message = message
+        self.links = links
+        self.timestamp = timestamp
