@@ -3,6 +3,7 @@ from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
 
 import cgi
 import filter
+import json
 import re
 
 PORT_NUMBER = 80
@@ -17,7 +18,7 @@ class myHandler(BaseHTTPRequestHandler):
             ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
             if ctype == 'application/json':
                 length = int(self.headers.getheader('content-length'))
-                data = cgi.parse_qs(self.rfile.read(length), keep_blank_values=1)
+                data = json.parse(self.rfile.read(length))
                 chat_room = self.path.split('/')[-1]
                 filter.add_context(chat_room, data)
                 print "record from %s is recieved" % chat_room
@@ -30,7 +31,6 @@ class myHandler(BaseHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
         return
-
 
 
 try:
