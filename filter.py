@@ -4,6 +4,8 @@ from oauth2client.client import GoogleCredentials
 from yelp.client import Client
 from yelp.oauth1_authenticator import Oauth1Authenticator
 
+import db
+
 import argparse
 import httplib2
 import json
@@ -85,8 +87,7 @@ def score_question(response):
 # look at the distance of the message from the last question
 # return a rough probability that this is meant to be an answer
 def score_answer(response):
-	for dist in range (1, 6):
-		return 1/dist
+	print db.session().query(db.Message).order_by("timestamp desc").limit(5).all()
 
 	return 0
 
@@ -101,13 +102,12 @@ def evaluate_importance(response):
 
 	threshold = 50;
 	
-	print "response: ", response
+	#print "response: ", response
 	print "entities score: ", scores[0]
 	print "sentiment score: ", scores[1]
 	print "complexity score: ", scores[2]
 	print "question score: ", scores[3]
 	print "answer score: ", scores[4]
-
 
 	important = sum([a * b for a, b in zip(weights, scores)])
 	print "important: ", important, 'Yes' if important > threshold else 'No'
