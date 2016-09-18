@@ -1,9 +1,9 @@
 from googleapiclient import discovery
 from oauth2client.client import GoogleCredentials
 
-import db
-
 import argparse
+import datetime
+import db
 import httplib2
 import json
 import math
@@ -84,14 +84,22 @@ def score_question(response):
 # look at the distance of the message from the last question
 # return a rough probability that this is meant to be an answer
 def score_answer(response):
-	print db.session().query(db.Message).order_by("timestamp desc").limit(5).all()
+	previous_entries = db.session().query(db.Message).order_by("timestamp desc").limit(3).all()
+	distance = 1
+
+	for entry in reversed(previous_entries):
+		if score_question(analyze_all(entry.message)):
+			return 1/distance
+		distance += 1
 
 	return 0
 
-def score_elapsed_time(response):
-	elapsedMinutes = 1
+def score_elapsed_time(responseTime):
+	previous_entry = db.session().query(db.Message).order_by("timestamp desc").limit(1).all()
 
-	return max(2 ** (elapsedMinutes / 50), 5)
+	elapsedTime = (responseTime - previousEntry.timestamp).total_seconds() / 60
+
+	return max(2 ** (elapsedMinutes / 50), 5) - 1
 
 def evaluate_importance(response):
 	weights = [30, 10, 5, 35, 30, 5] # entities, sentiment, complexity, question, answer, time
