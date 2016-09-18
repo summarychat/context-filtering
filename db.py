@@ -27,14 +27,12 @@ class Message(db.Model):
     channel = db.Column("channel",db.String)
     name = db.Column("name",db.String)
     message = db.Column("message",db.String)
-    scores = db.Column("scores",db.String)
     timestamp = db.Column("timestamp",db.DateTime)
 
     def __init__(self, channel, name, message, scores, timestamp):
         self.channel = channel
         self.name = name
         self.message = message
-        self.scores = scores
         self.timestamp = datetime.utcnow()
 
 class Event(db.Model):
