@@ -96,6 +96,8 @@ def score_answer(response):
 def score_elapsed_time(responseTime):
 	previous_entries = db.session().query(db.Message).order_by("timestamp desc").limit(2).all()
 
+	if(len(previous_entries) < 2) return 0
+
 	elapsedTime = (responseTime - previous_entries[1].timestamp).total_seconds() / 60
 
 	return max(2 ** (elapsedMinutes / 50), 5) - 1
