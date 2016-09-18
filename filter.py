@@ -97,7 +97,7 @@ def score_elapsed_time(latest_entries):
 
 	elapsed_minutes = (latest_entries[0].timestamp - latest_entries[1].timestamp).total_seconds() / 60
 
-	return max(2 ** (elapsed_minutes / 50), 5) - 1
+	return min(2 ** (elapsed_minutes / 50), 5) - 1
 
 def scrape(entities):
     str_res = []
