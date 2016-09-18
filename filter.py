@@ -114,26 +114,30 @@ def scrape(entities):
     return final
 
 def add_context(chat_room, data):
-	latest_entries = db.session().query(db.Message).order_by("timestamp desc").limit(4).all()
-	response = analyze_all(data['msg'])
+	def callback(session):
+		latest_entries = session.query(db.Message).order_by("timestamp desc").limit(4).all()
+		response = analyze_all(data['msg'])
 
-	weights = [30, 5, 7, 30, 20, 5] # entities, sentiment, complexity, question, answer, time
-	scores = [score_entities(response), score_sentiment(response), score_complexity(response), score_question(response), score_answer(latest_entries), score_elapsed_time(latest_entries)]
+		weights = [30, 5, 7, 30, 20, 5] # entities, sentiment, complexity, question, answer, time
+		scores = [score_entities(response), score_sentiment(response), score_complexity(response), score_question(response), score_answer(latest_entries), score_elapsed_time(latest_entries)]
 
-	threshold = 50;
-	importance = sum([a * b for a, b in zip(weights, scores)])
-	
-	#print "response: ", response
-	print "entities score: ", scores[0]
-	print "sentiment score: ", scores[1]
-	print "complexity score: ", scores[2]
-	print "question score: ", scores[3]
-	print "answer score: ", scores[4]
-	print "time score: ", scores[5]
-	print "importance: ", importance, 'Yes' if importance > threshold else 'No'
+		threshold = 50;
+		importance = sum([a * b for a, b in zip(weights, scores)])
+		
+		#print "response: ", response
+		print "entities score: ", scores[0]
+		print "sentiment score: ", scores[1]
+		print "complexity score: ", scores[2]
+		print "question score: ", scores[3]
+		print "answer score: ", scores[4]
+		print "time score: ", scores[5]
+		print "importance: ", importance, 'Yes' if importance > threshold else 'No'
 
-	if importance > threshold:
-		db.session().add(db.Event(channel=chat_room, name=data['user'], message=data['msg'], links=scrape(response['entities']), timestamp=latest_entries[0].timestamp))
+		if importance > threshold:
+			session.add(db.Event(channel=chat_room, name=data['user'], message=data['msg'], links=scrape(response['entities']), timestamp=latest_entries[0].timestamp))
+			session.commit()
+			print "Finished: ", session.query(db.Event).order_by("timestamp desc").limit(4).all()
+	db.run_transaction(db.sessionmaker, callback)
 
 if __name__ == '__main__':
 	for line in open(sys.argv[1]).readlines():
